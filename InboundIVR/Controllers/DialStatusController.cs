@@ -16,7 +16,7 @@ namespace InboundIVR.Controllers
 {
     public class DialStatusController : TwilioController
     {
-        private readonly string BaseUrl = "https://3d09f9b20260.ngrok.io";
+        private readonly string BaseUrl = ConfigurationManager.AppSettings["BaseUrl"];
 
         public DialStatusController()
         {
@@ -61,8 +61,8 @@ namespace InboundIVR.Controllers
             var response = new VoiceResponse();
 
             response.Dial(
-                callerId: "+12062029455",
-                number: "+18136357750",
+                callerId: ConfigurationManager.AppSettings["FromNumber"],
+                number: ConfigurationManager.AppSettings["ToNumberB"],
                 action: new Uri($"{BaseUrl}/DialStatus"));
 
             var call = CallResource.Update(

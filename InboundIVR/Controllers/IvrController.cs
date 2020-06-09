@@ -17,7 +17,7 @@ namespace InboundIVR.Controllers
 {
     public class IVRController : TwilioController
     {
-        private readonly string BaseUrl = "https://3d09f9b20260.ngrok.io";
+        private readonly string BaseUrl = ConfigurationManager.AppSettings["BaseUrl"];
 
         public IVRController()
         {
@@ -163,8 +163,8 @@ namespace InboundIVR.Controllers
             var response = new VoiceResponse();
 
             response.Dial(
-                callerId: "+12062029455",
-                number: "+11234567890",
+                callerId: ConfigurationManager.AppSettings["FromNumber"],
+                number: ConfigurationManager.AppSettings["ToNumberA"],
                 action: new Uri($"{BaseUrl}/DialStatus"));
 
             var call = CallResource.Update(
