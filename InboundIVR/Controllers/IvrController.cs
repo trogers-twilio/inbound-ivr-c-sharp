@@ -1,18 +1,31 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Web;
 using System.Web.Mvc;
+using Twilio;
 using Twilio.AspNet.Common;
 using Twilio.AspNet.Mvc;
+using Twilio.Rest.Api.V2010.Account;
 using Twilio.TwiML;
 using Twilio.TwiML.Voice;
-using Twilio.Rest.Api.V2010.Account;
+using System.Diagnostics;
 
 namespace InboundIVR.Controllers
 {
     public class IVRController : TwilioController
     {
+        private readonly string BaseUrl = "https://3d09f9b20260.ngrok.io";
+
+        public IVRController()
+        {
+            var accountSid = ConfigurationManager.AppSettings["AccountSid"];
+            var authToken = ConfigurationManager.AppSettings["AuthToken"];
+
+            TwilioClient.Init(accountSid, authToken);
+        }
         // POST: IVR/Entry
         public ActionResult Entry()
         {
@@ -26,27 +39,27 @@ namespace InboundIVR.Controllers
         }
 
         // POST: IVR/Menu 
-        public ActionResult Menu(string digits)
+        public ActionResult Menu(VoiceRequest request)
         {
-            var selectedOption = digits;
+            var selectedOption = request.Digits;
 
-            switch(digits)
+            switch(selectedOption)
             {
                 case "1":
                     return ReturnAddressHours();
                 case "2":
-                    return DialRepresentative();
+                    return DialRepresentative(request.CallSid);
                 default:
                     return RedirectMain();
             }
         }
 
         // POST: IVR/Address
-        public ActionResult Address(string digits)
+        public ActionResult Address(VoiceRequest request)
         {
-            var selectedOption = digits;
+            var selectedOption = request.Digits;
 
-            switch(digits)
+            switch(selectedOption)
             {
                 case "1":
                     return ReturnAddressHours();
@@ -62,7 +75,7 @@ namespace InboundIVR.Controllers
             var response = new VoiceResponse();
 
             var gather = new Gather(
-                action: Url.ActionUri("Menu", "IVR"),
+                action: new Uri($"{BaseUrl}/IVR/Menu"),
                 numDigits: 1,
                 timeout: 5,
                 actionOnEmptyResult: true);
@@ -86,8 +99,8 @@ namespace InboundIVR.Controllers
             var response = new VoiceResponse();
 
             response.Say("I'm sorry, I didn't hear a selection. Please try again.");
-
-            response.Redirect(Url.ActionUri("EntryRetry", "IVR"));
+            
+            response.Redirect(new Uri($"{BaseUrl}/IVR/EntryRetry"));
 
             return TwiML(response);
         }
@@ -98,9 +111,9 @@ namespace InboundIVR.Controllers
 
             response.Say("Our address is 123 Lincoln St, Omaha, Nebraska 56789. " +
                 "We are open Monday through Friday, from 8 A M to 5 P M, Eastern Standard Time.");
-
+            
             var gather = new Gather(
-                action: Url.ActionUri("Address", "IVR"),
+                action: new Uri($"{BaseUrl}/IVR/Address"),
                 numDigits: 1,
                 timeout: 5);
 
@@ -115,13 +128,17 @@ namespace InboundIVR.Controllers
             return TwiML(response);
         }
 
-        private TwiMLResult DialRepresentative()
+        private TwiMLResult DialRepresentative(string callSid)
         {
             var response = new VoiceResponse();
 
             response.Say("Please wait one moment while I connect you with the next available representative.");
 
-            response.Redirect(new Uri("http://com.twilio.sounds.music.s3.amazonaws.com/index.xml"));
+            response.Redirect(
+                new Uri("http://com.twilio.sounds.music.s3.amazonaws.com/index.xml"),
+                method: Twilio.Http.HttpMethod.Get);
+            
+            System.Threading.Tasks.Task.Run(() => { UpdateCallAfterSleep(callSid); });
 
             return TwiML(response);
         }
@@ -135,19 +152,26 @@ namespace InboundIVR.Controllers
             return TwiML(response);
         }
 
-        private async void UpdateCallAfterSleep(string callSid)
+        private async System.Threading.Tasks.Task UpdateCallAfterSleep(string callSid)
         {
             // Perform any additional API calls here, such as looking
             // up which representative should receive the call
-            await System.Threading.Tasks.Task.Delay(5000);
+            Debug.WriteLine("Waiting 10 seconds");
+            await System.Threading.Tasks.Task.Delay(10000);
+            Debug.WriteLine("Done waiting");
 
-            var dial = new Dial(
+            var response = new VoiceResponse();
+
+            response.Dial(
                 callerId: "+12062029455",
-                number: "+15551234567",
-                action: Url.ActionUri("Index", "DialStatus"));
+                number: "+11234567890",
+                action: new Uri($"{BaseUrl}/DialStatus"));
 
-            response.Append(dial);
+            var call = CallResource.Update(
+                twiml: new Twilio.Types.Twiml(response.ToString()),
+                pathSid: callSid);
 
+            Debug.WriteLine(string.Format("Updated call {0}", call.Sid));
         }
     }
 }
