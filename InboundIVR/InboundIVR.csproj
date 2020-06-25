@@ -123,6 +123,8 @@
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="Controllers\DialStatusController.cs" />
     <Compile Include="Controllers\IVRController.cs" />
+    <Compile Include="Controllers\QueueController.cs" />
+    <Compile Include="Controllers\RecordingStatusController.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
@@ -149,6 +151,8 @@
     <Folder Include="Models\" />
     <Folder Include="Views\DialStatus\" />
     <Folder Include="Views\Ivr\" />
+    <Folder Include="Views\Queue\" />
+    <Folder Include="Views\RecordingStatus\" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>

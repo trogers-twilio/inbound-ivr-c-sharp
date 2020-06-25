@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Configuration;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Web;
 using System.Web.Mvc;
 using Twilio;
 using Twilio.AspNet.Common;
@@ -26,6 +22,7 @@ namespace InboundIVR.Controllers
 
             TwilioClient.Init(accountSid, authToken);
         }
+
         // POST: IVR/Entry
         public ActionResult Entry()
         {
